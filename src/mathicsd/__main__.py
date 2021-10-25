@@ -40,6 +40,7 @@ def detect_default_backend() -> Optional[str]:
         return 'gtk'
 
 def spawn_icon():
+    # NOTE: See below for IDEA TO FIX ALL BUGS!!!
     def run_icon():
         icon = pystray.Icon("Mathics!", load_logo(), backend='gtk')
         icon.run()
@@ -67,6 +68,10 @@ def run(backend):
         else:
             print("Successful connection!")
             break
+    # IDEA: Spawn a SUBPROCESS to deal with the webview
+    # By spawning a subprocess, we can fix the issues with pystray & webview integration
+    # Issues like closing apps & messing with GTK context magically disapear.
+    # See issue #1
     webview.start(func=spawn_icon, gui=backend)
 
 
