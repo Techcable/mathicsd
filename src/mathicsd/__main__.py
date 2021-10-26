@@ -1,21 +1,14 @@
-from typing import Optional
-
-import pystray
-import click
-import webview
-import time
-import socket
-import requests
 import sys
-from PIL import Image
-from threading import Thread
-
+import multiprocessing as mp
 import importlib.resources
 
-from requests.exceptions import RequestException
-from . import FatalError, run_server, PORT, server_process, warning, local_storage
+from pystray import Icon, Menu, MenuItem 
+import click
 
-URL=f"http://localhost:{PORT}"
+from PIL import Image
+
+from . import FatalError, run_server, PORT, server_process, \
+    viewer, warning, local_storage, shutdown_server
 
 def load_logo() -> Image:
     f = importlib.resources.open_binary("mathicsd.resources", "logo.png")
@@ -25,55 +18,56 @@ def load_logo() -> Image:
     finally:
         f.close()
 
+WEBVIEW_PROCESS = None
 
-def detect_default_backend() -> Optional[str]:
-    if sys.platform == 'linux':
-        # Combination of pystray + 
-        return 'qt'
-    try:
-        # Surprisingly, Qt has lower memory usage in my tests..
-        # This is despite the fact it's backed by chromium
-        import PyQt5
-        import PyQt5.QtWebEngineWidgets
-        return 'qt'
-    except ImportError:
-        return 'gtk'
-
-def spawn_icon():
-    # NOTE: See below for IDEA TO FIX ALL BUGS!!!
-    def run_icon():
-        icon = pystray.Icon("Mathics!", load_logo(), backend='gtk')
-        icon.run()
-    t = Thread(target=run_icon, name="Icon Thread")
-    t.start()
-
-
-@click.command('mathicsd')
-@click.option('--backend', default=detect_default_backend(),
-    help="Explicitly specify the webview backend to use.")
-def run(backend):
-    run_server()
-    print(f"Connecting to {URL}")
-    webview.create_window("Mathics!", url=URL)
-        #html=f"""<p>Hello!</p>
-        # <iframe src="http://localhost:{PORT}">""")
-    print("Waiting for web-server..")
-    while True:
-        if server_process() is None:
-            raise FatalError("Server process died!")
-        try:
-            requests.head(URL)
-        except RequestException:
-            continue
-        else:
-            print("Successful connection!")
-            break
-    # IDEA: Spawn a SUBPROCESS to deal with the webview
+def spawn_webview(backend):
+    global WEBVIEW_PROCESS
+    if WEBVIEW_PROCESS is not None and WEBVIEW_PROCESS.is_alive():
+        warning("Webview already exists")
+        return
+    # We spawn a SUBPROCESS to deal with the webview
     # By spawning a subprocess, we can fix the issues with pystray & webview integration
     # Issues like closing apps & messing with GTK context magically disapear.
-    # See issue #1
-    webview.start(func=spawn_icon, gui=backend)
+    p = mp.Process(target=viewer.spawn_webview, args=(backend,))
+    p.start()
+    print(f"Spawned webview process: {p.pid}")
+    WEBVIEW_PROCESS = p
 
+
+def exit(icon):
+    shutdown_server()
+    WEBVIEW_PROCESS.terminate()
+    icon.stop()
+
+@click.command('mathicsd')
+@click.option('--backend', default=viewer.detect_default_backend(),
+    help="Explicitly specify the webview backend to use.")
+def run(backend='qt'):
+    run_server()
+    spawn_webview(backend)
+    icon = Icon(
+        "Mathics Daemon", load_logo(),
+        menu=Menu(
+            MenuItem(
+                "Open Viewer",
+                lambda: spawn_webview(backend)
+            ),
+            MenuItem(
+                "Quit (Stop Server)",
+                lambda icon, _: exit(icon)
+            )
+        )
+    )
+    try:
+        icon.run()
+    except (KeyboardInterrupt, click.Abort) as e:
+        # TODO: Broken
+        print("Interrupt:", e)
+        exit(icon)
 
 if __name__ == "__main__":
+    # We don't want resources (like )
+    # TODO: Investigate forkserver?
+    mp.set_start_method('spawn')
+    # TODO: How to run click so it doesn't catch KeyboardInterrupt?????
     run()

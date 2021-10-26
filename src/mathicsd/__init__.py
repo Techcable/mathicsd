@@ -2,6 +2,7 @@
 import os
 import sys
 import shutil
+import signal
 from pathlib import Path
 from typing import Optional
 from subprocess import Popen, DEVNULL, TimeoutExpired
@@ -50,6 +51,24 @@ def server_process() -> Optional[psutil.Process]:
     except (FileNotFoundError, psutil.NoSuchProcess):
         return None
 
+def shutdown_server(wait=True):
+    global _SERVER_PROCESS
+    if _SERVER_PROCESS is None:
+        return
+    if os.name == "posix":
+        sig = signal.SIGINT
+    elif os.name == "nt":
+        sig = signal.CTRL_C_EVENT
+    else:
+        raise FatalError(f"Unsupported OS: {os.name}")
+    _SERVER_PROCESS.send_signal(sig)
+    if (code := _SERVER_PROCESS.wait()) != 0:
+        warning(f"Server died with code {code}")
+    _SERVER_PROCESS = None
+
+def exit():
+    shutdown_server()
+    
 
 def run_server() -> psutil.Process:
     if (proc := server_process()) is not None:
@@ -67,6 +86,7 @@ def run_server() -> psutil.Process:
         f.write(str(child.pid))
     _SERVER_PROCESS = psutil.Process(pid=child.pid)
     def _server_thread():
+        global _SERVER_PROCESS
         return_code = child.wait()
         warning(f"Server died with code {return_code}")
         _SERVER_PROCESS = None
