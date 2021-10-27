@@ -5,30 +5,24 @@ import importlib.resources
 from pystray import Icon, Menu, MenuItem 
 import click
 
-from PIL import Image
-
 from . import FatalError, run_server, PORT, server_process, \
-    viewer, warning, local_storage, shutdown_server
+    viewer, warning, local_storage, shutdown_server, load_png_logo
 
-def load_logo() -> Image:
-    f = importlib.resources.open_binary("mathicsd.resources", "logo.png")
-    try:
-        img = Image.open(f)
-        return img.copy()
-    finally:
-        f.close()
 
 WEBVIEW_PROCESS = None
 
+_FIRST_RUN=True
 def spawn_webview(backend):
     global WEBVIEW_PROCESS
+    global _FIRST_RUN
     if WEBVIEW_PROCESS is not None and WEBVIEW_PROCESS.is_alive():
         warning("Webview already exists")
         return
     # We spawn a SUBPROCESS to deal with the webview
     # By spawning a subprocess, we can fix the issues with pystray & webview integration
     # Issues like closing apps & messing with GTK context magically disapear.
-    p = mp.Process(target=viewer.spawn_webview, args=(backend,))
+    p = mp.Process(target=viewer.spawn_webview, args=(backend, _FIRST_RUN))
+    _FIRST_RUN=False
     p.start()
     print(f"Spawned webview process: {p.pid}")
     WEBVIEW_PROCESS = p
@@ -46,7 +40,7 @@ def run(backend='qt'):
     run_server()
     spawn_webview(backend)
     icon = Icon(
-        "Mathics Daemon", load_logo(),
+        "Mathics Daemon", load_png_logo(),
         menu=Menu(
             MenuItem(
                 "Open Viewer",

@@ -7,11 +7,29 @@ from pathlib import Path
 from typing import Optional
 from subprocess import Popen, DEVNULL, TimeoutExpired
 from threading import Thread
+import importlib.resources
 
+from PIL import Image
 import click
 import psutil
 
 PORT = 8571
+
+
+def load_png_logo() -> Image:
+    f = importlib.resources.open_binary("mathicsd.resources", "logo.png")
+    try:
+        img = Image.open(f)
+        return img.copy()
+    finally:
+        f.close()
+
+def load_svg_logo():
+    f = importlib.resources.open_text("mathicsd.resources", "logo.svg")
+    try:
+        return f.read()
+    finally:
+        f.close()
 
 class FatalError(click.ClickException):
     pass
