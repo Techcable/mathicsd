@@ -2,7 +2,7 @@
 Name=Mathicsd
 Icon={{ICON_LOCATION}}
 Comment=A webview frontend to Mathics.
-Exec="python3" "-m" "mathicsd"
+Exec="python3" "-m" "mathicsd" "--gui"
 Version=1.0
 Type=Application
 Categories=Development;Math;Science;

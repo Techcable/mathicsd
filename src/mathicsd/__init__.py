@@ -31,7 +31,7 @@ def load_svg_logo():
     finally:
         f.close()
 
-class FatalError(click.ClickException):
+class FatalError(Exception):
     pass
 
 def warning(*args, **kwargs):
