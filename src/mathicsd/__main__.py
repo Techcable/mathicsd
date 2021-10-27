@@ -7,22 +7,20 @@ import click
 
 from . import FatalError, run_server, PORT, server_process, \
     viewer, warning, local_storage, shutdown_server, load_png_logo
+from .viewer import ViewerSettings
 
 
 WEBVIEW_PROCESS = None
 
-_FIRST_RUN=True
-def spawn_webview(backend):
+def spawn_webview(settings):
     global WEBVIEW_PROCESS
-    global _FIRST_RUN
     if WEBVIEW_PROCESS is not None and WEBVIEW_PROCESS.is_alive():
         warning("Webview already exists")
         return
     # We spawn a SUBPROCESS to deal with the webview
     # By spawning a subprocess, we can fix the issues with pystray & webview integration
     # Issues like closing apps & messing with GTK context magically disapear.
-    p = mp.Process(target=viewer.spawn_webview, args=(backend, _FIRST_RUN))
-    _FIRST_RUN=False
+    p = mp.Process(target=viewer.spawn_webview, args=(settings,))
     p.start()
     print(f"Spawned webview process: {p.pid}")
     WEBVIEW_PROCESS = p
@@ -36,15 +34,26 @@ def exit(icon):
 @click.command('mathicsd')
 @click.option('--backend', default=viewer.detect_default_backend(),
     help="Explicitly specify the webview backend to use.")
-def run(backend='qt'):
+@click.option('--hide-startup-msg', is_flag=True,
+    help="Suppress the default startup message")
+@click.option('--skip-loading-screen', is_flag=True,
+    help="Skip the loading screen")
+def run(backend, hide_startup_msg, skip_loading_screen):
     run_server()
-    spawn_webview(backend)
+    spawn_webview(ViewerSettings(
+        backend=backend, show_startup_msg=not hide_startup_msg,
+        loading_wait=0 if skip_loading_screen else 3
+    ))
     icon = Icon(
         "Mathics Daemon", load_png_logo(),
         menu=Menu(
             MenuItem(
                 "Open Viewer",
-                lambda: spawn_webview(backend)
+                lambda: spawn_webview(ViewerSettings(
+                    backend=backend,
+                    show_startup_msg=False,
+                    loading_wait=0)
+                )
             ),
             MenuItem(
                 "Quit (Stop Server)",
