@@ -15,6 +15,13 @@ is running at a time, and shows a small icon in the system status bar
 - [Mathics](https://mathics.org) and [`mathics-django`](https://github.com/Mathics3/mathics-django)
    - NOTE: `mathicsserver` command must be in `$PATH` and directly runnable. 
 
+## Install
+`pip install --user mathicsd`
+
+On linux, run `./install/install_desktop.py` to create the desktop file.
+
+TODO: Better installation (ie. run 'install_desktop.py' automatically and make cross-platform).
+
 ## Licensing
 [Mathics](https://mathics.org/) is free-software, licensed under the GPLv3 ([Wikipedia page](https://en.wikipedia.org/wiki/GNU_General_Public_License)).
 
