@@ -1,6 +1,6 @@
 mathicsd
 ==========
-A convenient webview frontend to (Mathics)[https://mathics.org/].
+A convenient webview frontend to [Mathics](https://mathics.org/).
 
 Uses [mathics-django](https://github.com/Mathics3/mathics-django) as the underlying server.
 
@@ -25,9 +25,7 @@ TODO: Better installation (ie. run 'install_desktop.py' automatically and make c
 ## Licensing
 [Mathics](https://mathics.org/) is free-software, licensed under the GPLv3 ([Wikipedia page](https://en.wikipedia.org/wiki/GNU_General_Public_License)).
 
-`mathicsd` is a third-party project, licensed under the [MIT license](./LICENSE.md).
-
-NOTE: If you are developing software that uses `mathicsd` internally, you are still bound (indirectly) by the terms of the GPLv3. You cannot use `mathicsd` to get around GPL-compatibility.
+`mathicsd` is a third-party project. It is also licensed under the GPLv3. See [the license file](./LICENSE.md) for more details).
 
 ## Memory usage
 The `mathicsd` process itself requires like 12MB. That's like a 5-10% overhead (not much.) 

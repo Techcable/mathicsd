@@ -31,9 +31,9 @@ def exit(icon):
     shutdown_server()
     for proc in WEBVIEW_PROCESSES:
         proc.terminate()
-        proc.wait()
     if icon is not None:
         icon.stop()
+    sys.exit(0)
 
 def respawn_webview(force=False):
     spawn_webview(ViewerSettings(
